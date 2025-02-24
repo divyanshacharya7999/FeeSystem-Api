@@ -1,4 +1,5 @@
-﻿using Abp.Domain.Entities;
+﻿using Abp.Auditing;
+using Abp.Domain.Entities;
 using Abp.Domain.Entities.Auditing;
 using FeeManagementSystem.Classes;
 using FeeManagementSystem.FeeTypes;
@@ -11,6 +12,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FeeManagementSystem.Fees
 {
+    [Audited]
     public class Fee : Entity<int>, IMustHaveTenant
     {
         public int TenantId { get; set; }

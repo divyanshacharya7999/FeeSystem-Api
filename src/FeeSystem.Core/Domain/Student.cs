@@ -1,4 +1,5 @@
 ﻿using Abp.Application.Services.Dto;
+using Abp.Auditing;
 using Abp.Domain.Entities;
 using Abp.Domain.Entities.Auditing;
 using FeeManagementSystem.Classes;
@@ -11,6 +12,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FeeManagementSystem.Students
 {
+    [Audited]
     public class Student : Entity<int>, IMustHaveTenant
     {
         public int TenantId { get; set; }

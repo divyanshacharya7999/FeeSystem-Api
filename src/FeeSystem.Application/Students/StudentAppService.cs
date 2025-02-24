@@ -69,7 +69,6 @@ namespace FeeSystem.Students
                 return new List<StudentDto>();
             }
 
-            // Map the list of students to DTOs
             var studentDtos = ObjectMapper.Map<List<StudentDto>>(students);
 
             return studentDtos;
@@ -91,29 +90,26 @@ namespace FeeSystem.Students
             double totalPeriod;
             switch (studentFee.PaymentPlan.IntervalInMonths)
             {
-                case 12: // Yearly
+                case 12:
                     totalPeriod = 1;
                     break;
-                case 3: // Quarterly
+                case 3:
                     totalPeriod =  4;
                     break;
-                case 1: // Monthly
+                case 1:
                     totalPeriod = 12;
                     break;
                 default:
                     throw new ArgumentException($"Unsupported interval: {studentFee.PaymentPlan.IntervalInMonths}");
             }
-            // Update the fields
+
             studentFee.AdditionalFee = input.AdditionalFee;
             studentFee.Discount = input.Discount;
 
-            
-            // Recalculate the total amount considering the additional fee and discount
             studentFee.UpdatedTotalAmount = ((studentFee.TotalAmount) + studentFee.AdditionalFee) - studentFee.Discount;
 
             studentFee.AmountPerPeriod = (studentFee.UpdatedTotalAmount) / totalPeriod;
 
-            // Save the changes
             await _studentFeeRepository.UpdateAsync(studentFee);
         }
 
@@ -125,11 +121,9 @@ namespace FeeSystem.Students
 
             if (student == null)
             {
-                // Consider using a specific exception or a custom exception class
                 throw new UserFriendlyException("Student not found!");
             }
 
-            // Ensure your mapping configuration is set correctly
             var studentDto = ObjectMapper.Map<StudentDto>(student);
 
             return studentDto;
@@ -141,7 +135,6 @@ namespace FeeSystem.Students
 
             try
             {
-                // ✅ Check if the phone number already exists for the tenant
                 var existingStudent = await _studentRepository
                     .FirstOrDefaultAsync(s => s.ContactNumber == input.ContactNumber && s.TenantId == localTenantId);
 
@@ -150,7 +143,6 @@ namespace FeeSystem.Students
                     throw new UserFriendlyException("A student with this phone number already exists.");
                 }
 
-                // ✅ Check if the class exists
                 var classExist = _classRepository
                     .GetAll()
                     .Where(cl => cl.ClassId == input.ClassId && cl.TenantId == localTenantId)
@@ -161,7 +153,6 @@ namespace FeeSystem.Students
                     throw new UserFriendlyException("Class not found.");
                 }
 
-                // ✅ Generate the custom Student ID
                 string customStudentId = await GenerateCustomStudentId(localTenantId, input.ClassId);
 
                 var student = ObjectMapper.Map<Student>(input);
@@ -192,24 +183,22 @@ namespace FeeSystem.Students
                             throw new UserFriendlyException("Payment plan is null for Fee ID: " + fee.Id);
                         }
 
-                        // ✅ Calculate the amount per period based on the payment plan's interval.
                         double feeAmountPerPeriod = fee.Amount;
                         switch (paymentPlan.IntervalInMonths)
                         {
-                            case 12: // Yearly
+                            case 12:
                                 feeAmountPerPeriod = fee.Amount / 1;
                                 break;
-                            case 3: // Quarterly
+                            case 3:
                                 feeAmountPerPeriod = fee.Amount / 4;
                                 break;
-                            case 1: // Monthly
+                            case 1:
                                 feeAmountPerPeriod = fee.Amount / 12;
                                 break;
                             default:
                                 throw new UserFriendlyException($"Unsupported interval: {paymentPlan.IntervalInMonths}");
                         }
 
-                        // ✅ Add to the total amounts.
                         totalAmount += fee.Amount;
                         amountPerPeriod += feeAmountPerPeriod;
 
@@ -362,8 +351,6 @@ namespace FeeSystem.Students
             await CurrentUnitOfWork.SaveChangesAsync();
         }
 
-        // Class Management
-
         public async Task<ClassDto> GetClassAsync(int id)
         {
             var classEntity = await _classRepository.GetAll()
@@ -456,102 +443,34 @@ namespace FeeSystem.Students
             }
         }
         
-        private async Task<int> GenerateCustomClassIdAsync(int localTenantId)
-        {
-            // Retrieve the highest ClassId for the given tenant
-            var lastClassInTenant = await _classRepository
-                .GetAll()
-                .Where(c => c.TenantId == localTenantId)
-                .OrderByDescending(c => c.ClassId)
-                .FirstOrDefaultAsync();
-
-            // Determine the next sequential class number
-            int nextClassNumber = lastClassInTenant != null
-                ? (lastClassInTenant.ClassId % 100) + 1 // Extract the sequential number part
-                : 1;
-
-            // Generate the custom ClassId in the format {TenantId}{SequentialNumber}
-            int customClassId = int.Parse($"{localTenantId}{nextClassNumber:D2}");
-
-            return customClassId;
-        }
-        
         private async Task<string> GenerateCustomStudentId(int tenantId, int classId)
         {
             string fixedRandomNumber = "0967";
-            string tenantIdPart = tenantId.ToString("D3"); //  it's always 3 digits
-            string classIdPart = classId.ToString("D2"); //  it's always 2 digits
+            string tenantIdPart = tenantId.ToString("D3"); 
+            string classIdPart = classId.ToString("D2");
 
-            // Retrieve the highest existing student number for this class and tenant
             var lastStudentInClass = await _studentRepository
                 .GetAll()
                 .Where(s => s.TenantId == tenantId && s.ClassId == classId)
                 .OrderByDescending(s => s.StudentId)
                 .FirstOrDefaultAsync();
 
-            // Determine the next incremental number
             int nextIncrementalNumber = 1;
             if (lastStudentInClass != null)
             {
                 string lastStudentId = lastStudentInClass.StudentId;
-                string lastIncrementalPart = lastStudentId.Substring(9); // Extracting the last 3 digits
+                string lastIncrementalPart = lastStudentId.Substring(9);
                 if (int.TryParse(lastIncrementalPart, out int lastIncrement))
                 {
                     nextIncrementalNumber = lastIncrement + 1;
                 }
             }
 
-            string incrementalPart = nextIncrementalNumber.ToString("D3"); // it's always 3 digits
+            string incrementalPart = nextIncrementalNumber.ToString("D3");
 
-            // Constructing the final Student ID
             string studentId = $"{fixedRandomNumber}{tenantIdPart}{classIdPart}{incrementalPart}";
             return studentId;
         }
-
-        private async Task<int> GenerateCustomClassId(int localTenantId)
-        {
-            string tenantIdPart = localTenantId.ToString("D3");
-            var lastClassInTenant = await _classRepository
-                .GetAll()
-                .Where(c=>c.TenantId == localTenantId)
-                .OrderByDescending(c=>c.ClassId)
-                .FirstOrDefaultAsync();
-
-            int nextIncrementalNumber = 1;
-            if(lastClassInTenant != null)
-            {
-                nextIncrementalNumber = lastClassInTenant.ClassId + 1;
-            }
-            else
-            {
-                nextIncrementalNumber = (localTenantId * 100) + 1;
-            }
-
-            int ClassId = nextIncrementalNumber;
-            return ClassId;
-        }
-        
-        private double CalculateAmountPerPeriod(double totalFeeAmount, int intervalInMonths)
-        {
-            // Handling different payment intervals
-            if (intervalInMonths == 1) // Monthly
-            {
-                return totalFeeAmount / 12;
-            }
-            else if (intervalInMonths == 4) // Quarterly
-            {
-                return totalFeeAmount / 4;
-            }
-            else if (intervalInMonths == 12) // Yearly
-            {
-                return totalFeeAmount; // No division needed, as it’s a one-time payment.
-            }
-            else
-            {
-                throw new Exception("Unsupported payment plan interval."); // Handle unsupported intervals.
-            }
-        }
-
     }
 }
 
