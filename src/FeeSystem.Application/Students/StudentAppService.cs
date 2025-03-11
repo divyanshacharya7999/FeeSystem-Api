@@ -19,6 +19,9 @@ using Abp.Collections.Extensions;
 using Abp.Domain.Entities;
 using FeeManagementSystem.Classes.Dto;
 using AutoMapper;
+using FeeSystem.MultiTenancy.Dto;
+using FeeSystem.MultiTenancy;
+using Microsoft.AspNetCore.Authorization;
 
 namespace FeeSystem.Students
 {
@@ -31,6 +34,7 @@ namespace FeeSystem.Students
         private readonly IRepository<StudentFee, int> _studentFeeRepository;
         private readonly IRepository<Payment, long> _paymentRepository;
         private readonly IMapper _mapper;
+        private readonly IRepository<Tenant, int> _tenantRepository;
 
         public StudentAppService(
             IRepository<Student, int> studentRepository,
@@ -38,7 +42,8 @@ namespace FeeSystem.Students
             IRepository<Fee, int> feeRepository,
             IRepository<StudentFee, int> studentFeeRepository,
             IRepository<Payment, long> paymentRepository,
-            IMapper mapper)
+            IMapper mapper,
+            IRepository<Tenant, int> tenantRepository)
         {
             _studentRepository = studentRepository;
             _classRepository = classRepository;
@@ -46,6 +51,7 @@ namespace FeeSystem.Students
             _studentFeeRepository = studentFeeRepository;
             _paymentRepository = paymentRepository;
             _mapper = mapper;
+            _tenantRepository = tenantRepository;
         }
 
         public async Task<List<StudentDto>> GetAllStudents()
@@ -471,6 +477,14 @@ namespace FeeSystem.Students
             string studentId = $"{fixedRandomNumber}{tenantIdPart}{classIdPart}{incrementalPart}";
             return studentId;
         }
+
+        [AllowAnonymous]
+        public async Task<List<TenantDto>> GetAllSchool()
+        {
+            var tenants = await _tenantRepository.GetAllListAsync();
+            return ObjectMapper.Map<List<TenantDto>>(tenants);
+        }
+
     }
 }
 

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using FeeManagementSystem.Classes;
 using FeeManagementSystem.Classes.Dto;
 using Abp.Application.Services.Dto;
+using FeeSystem.MultiTenancy.Dto;
 
 namespace FeeSystem.Students
 {
@@ -29,5 +30,7 @@ namespace FeeSystem.Students
         Task<ApiResponseDto<string>> DeleteClassAsync(EntityDto<int> input);
 
         Task<ApiResponseDto<ClassDto>> UpdateClassAsync(UpdateClassDto input);
+
+        Task<List<TenantDto>> GetAllSchool();
     }
 }
